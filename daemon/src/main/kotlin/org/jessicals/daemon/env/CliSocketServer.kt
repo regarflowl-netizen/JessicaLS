@@ -92,7 +92,7 @@ object CliSocketServer {
       }
 
       val requestJson = input.readUTF()
-      val request = VectorIPC.gson.fromJson(requestJson, CliRequest::class.java)
+      val request = JessicaLSIPC.gson.fromJson(requestJson, CliRequest::class.java)
 
       // Intercept Log Streaming specifically before CliHandler
       if (request.command == "log" && request.action == "stream") {
