@@ -18,7 +18,7 @@
  * It serves as the central hub for native operations.
  */
 
-namespace vector::native {
+namespace jessicals::native {
 
 // Forward declaration from another module.
 class ConfigBridge;
@@ -228,4 +228,4 @@ protected:
     jclass entry_class_ = nullptr;
 };
 
-}  // namespace vector::native
+}  // namespace jessicals::native

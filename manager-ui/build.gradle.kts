@@ -19,7 +19,7 @@ kotlin {
 }
 
 android {
-    namespace = "org.matrix.vector.ui"
+    namespace = "org.jessicals.ui"
     buildFeatures { compose = true }
 }
 

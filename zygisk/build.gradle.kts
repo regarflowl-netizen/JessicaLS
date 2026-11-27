@@ -42,7 +42,7 @@ val moduleId =
         .trim()
 
 android {
-    namespace = "org.matrix.vector"
+    namespace = "org.jessicals"
 
     defaultConfig {
         multiDexEnabled = false
@@ -88,7 +88,7 @@ dependencies {
     compileOnly(projects.hiddenapi.stubs)
 }
 
-val zipAll = tasks.register("zipAll") { group = "Vector" }
+val zipAll = tasks.register("zipAll") { group = "JessicaLS" }
 
 androidComponents {
     onVariants(selector().all()) { variant ->
@@ -99,12 +99,12 @@ androidComponents {
         // Stage all files in a temporary directory inside 'build' before zipping
         val tempModuleDir = project.layout.buildDirectory.dir("module/${variant.name}")
         val zipFileName =
-            "Vector-v${versionNameProvider.get()}-${versionCodeProvider.get()}-$variantCapped.zip"
+            "JessicaLS-v${versionNameProvider.get()}-${versionCodeProvider.get()}-$variantCapped.zip"
 
         // Using Sync ensures that stale files from previous runs are removed.
         val prepareModuleFilesTask =
             tasks.register<Sync>("prepareModuleFiles$variantCapped") {
-                group = "Vector Module Packaging"
+                group = "JessicaLS Module Packaging"
                 dependsOn(
                     "assemble$variantCapped",
                     ":manager:package$variantCapped",
@@ -177,7 +177,7 @@ androidComponents {
                         )
                 into("framework") {
                     from(dexOutPath)
-                    rename("classes.dex", "vector.dex")
+                    rename("classes.dex", "jessicals.dex")
                 }
                 val injected = objects.newInstance<Injected>(tempModuleDir.get().asFile.path)
                 doLast {
@@ -192,7 +192,7 @@ androidComponents {
 
         val zipTask =
             tasks.register<Zip>("zip${variantCapped}") {
-                group = "Vector Module Packaging"
+                group = "JessicaLS Module Packaging"
                 dependsOn(prepareModuleFilesTask)
                 archiveFileName = zipFileName
                 destinationDirectory = file("$projectDir/release")
@@ -344,7 +344,7 @@ val resourceOwners =
         "de.robv.android.xposed.XposedInit",
         "de.robv.android.xposed.callbacks.XC_InitPackageResources",
         "de.robv.android.xposed.callbacks.XC_LayoutInflated",
-        "org.matrix.vector.legacy.LegacyDelegateImpl\$ResourceProxy",
+        "org.jessicals.legacy.LegacyDelegateImpl\$ResourceProxy",
     )
 
 /** Every type named anywhere in [cls] — its shape, its members and its instruction stream. */

@@ -301,7 +301,7 @@ void StoreWidened(JNIEnv *env, const PrimitiveWrapper &from, char to, jobject va
 
 }  // namespace
 
-namespace vector::native::jni {
+namespace jessicals::native::jni {
 /**
  * @brief JNI method to install a hook on a given method or constructor.
  * @param useModernApi Distinguishes between the legacy and modern callback
@@ -1113,4 +1113,4 @@ void RegisterHookBridge(JNIEnv *env) {
 
     REGISTER_VECTOR_NATIVE_METHODS(HookBridge);
 }
-}  // namespace vector::native::jni
+}  // namespace jessicals::native::jni

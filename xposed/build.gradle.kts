@@ -21,7 +21,7 @@ plugins {
 ktfmt { kotlinLangStyle() }
 
 android {
-    namespace = "org.matrix.vector.impl"
+    namespace = "org.jessicals.impl"
 
     androidResources { enable = false }
 

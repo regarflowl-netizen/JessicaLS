@@ -1,0 +1,260 @@
+package org.jessicals.ui.store
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import org.jessicals.ui.R
+
+/** A group the list can be asked to bring to the front. Several may apply at once. */
+enum class StorePriority(val labelRes: Int) {
+    Updates(R.string.store_updates_first),
+    Installed(R.string.store_installed_first);
+
+    fun applies(entry: StoreEntry): Boolean =
+        when (this) {
+            Updates -> entry.upgradable
+            Installed -> entry.installed != null
+        }
+}
+
+enum class StoreSort {
+    RecentlyUpdated,
+    Name,
+    MostStarred,
+}
+
+/**
+ * Which releases count.
+ *
+ * Two options, not three. The payload carries a beta release list and nothing a snapshot channel
+ * could select from, so such a channel would have no data behind it — and a control that can never
+ * change anything is a control that lies.
+ */
+enum class StoreChannel(val preference: String) {
+    Stable("stable"),
+    Prerelease("beta");
+
+    companion object {
+        fun of(preference: String): StoreChannel =
+            entries.firstOrNull { it.preference == preference } ?: Stable
+    }
+}
+
+/**
+ * Every release the chosen channel admits, newest first.
+ *
+ * **Where a beta lives depends on the payload.** In the catalogue it is not a flagged element of
+ * `releases` but a different array: not one list entry's `releases` carries `isPrerelease`, and
+ * each module that publishes a beta keeps it exclusively in `betaReleases`. In a detail record it
+ * is the reverse: there is no `betaReleases`, and the betas sit in `releases` with `isPrerelease`
+ * set. Both shapes are read here, because the install bar takes the newest release with an APK
+ * straight off this list whichever payload it came from.
+ *
+ * On the prerelease channel the order has to come from the version code rather than from position
+ * in either shape. The two arrays are sorted independently, a detail record is sorted by date, and
+ * a beta is not automatically newer: a module's newest beta can carry a lower code than its newest
+ * stable release. [latestOn] names the highest code, so the first element here has to be that
+ * release.
+ */
+public fun OnlineModule.releasesOn(channel: StoreChannel): List<Release> {
+    val published = releases.orEmpty().filter { it.isDraft != true }
+    if (channel == StoreChannel.Prerelease) {
+        val beta = betaReleases.orEmpty().filter { it.isDraft != true }
+        return (published + beta)
+            .distinctBy { it.tagName ?: it.id ?: it.name }
+            .sortedByDescending { it.version?.versionCode ?: Long.MIN_VALUE }
+    }
+    // A module that has only ever prereleased still has releases worth listing.
+    val stable = published.filter { it.isPrerelease != true }
+    return stable.ifEmpty { published }
+}
+
+/**
+ * The version the channel says is current — which is what every "Update to …" label states.
+ *
+ * On the prerelease channel that is whichever of the two channels is genuinely newer, not the beta
+ * unconditionally. Advertising `latestBetaRelease` on its own would offer a reader whose newest
+ * beta is older than their stable release a downgrade, and call it an update.
+ */
+public fun OnlineModule.latestOn(channel: StoreChannel): RepoVersion? {
+    val stable = RepoVersion.parse(latestRelease)
+    val best =
+        if (channel == StoreChannel.Stable) stable
+        else
+            listOfNotNull(stable, RepoVersion.parse(latestBetaRelease)).maxByOrNull {
+                it.versionCode
+            }
+    // A detail payload fetched for a module the catalogue has not loaded carries no summary of its
+    // own, so the newest release's own tag stands in.
+    return best ?: releasesOn(channel).firstOrNull()?.version
+}
+
+class RepoViewModel(
+    private val dataSource: StoreDataSource,
+    private val settings: StoreSettings,
+) : ViewModel() {
+
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+
+    private val _sort = MutableStateFlow(StoreSort.RecentlyUpdated)
+    val sort: StateFlow<StoreSort> = _sort.asStateFlow()
+
+    /**
+     * Which groups are pulled to the front, most recently chosen first.
+     *
+     * A list rather than a set of switches because these compose: turning on both "updates first"
+     * and "installed first" is a coherent request, and the only thing left to decide is which of
+     * them wins for a module that is both. Recency answers that — the group you just asked for is
+     * the one you are looking at — so the list is ordered by when each was switched on, and it
+     * extends to a third rule without changing anything here.
+     */
+    private val _priorities = MutableStateFlow(listOf(StorePriority.Updates))
+    val priorities: StateFlow<List<StorePriority>> = _priorities.asStateFlow()
+
+    val catalog: StateFlow<StoreCatalog> = dataSource.catalog
+    val isRefreshing: StateFlow<Boolean> = dataSource.isRefreshing
+
+    val channel: StateFlow<StoreChannel> =
+        settings.updateChannel
+            .map(StoreChannel::of)
+            .stateIn(
+                viewModelScope,
+                SharingStarted.Eagerly,
+                StoreChannel.of(settings.updateChannel.value),
+            )
+
+    /**
+     * Every catalogue entry paired with what this device has, before any filtering.
+     *
+     * Shared rather than recomputed per consumer: both the list and the "n updates" count need it,
+     * and it walks the whole catalogue.
+     */
+    private val allEntries: StateFlow<List<StoreEntry>> =
+        combine(
+                dataSource.catalog,
+                dataSource.installedVersions,
+                channel,
+                settings.mutedUpdates,
+                settings.storeInstalls,
+            ) { catalog, installed, channel, muted, storeInstalls ->
+                catalog.modules.map { entryFor(it, installed, channel, muted, storeInstalls) }
+            }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** For the header. Counted over the whole catalogue, not over whatever the search box left. */
+    val upgradableCount: StateFlow<Int> =
+        allEntries
+            .map { entries -> entries.count { it.upgradable } }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    val entries: StateFlow<List<StoreEntry>> =
+        combine(allEntries, _query, view()) { entries, query, view ->
+                entries.filter { it.matches(query) }.sortedWith(comparatorFor(view))
+            }
+            // Off the main thread, for the reason ModulesViewModel records: stateIn on its own
+            // collects on Dispatchers.Main.immediate, which would put a filter and a sort over the
+            // whole catalogue on the UI thread on every keystroke.
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    init {
+        // The catalogue outlives this ViewModel — switching tabs destroys the nav entry — so a
+        // return to the Store paints from what is already in memory and only fetches when there is
+        // nothing to paint.
+        if (!dataSource.catalog.value.loaded) viewModelScope.launch { dataSource.refresh() }
+        dataSource.refreshInstalled()
+    }
+
+    fun setQuery(value: String) {
+        _query.value = value
+    }
+
+    fun togglePriority(priority: StorePriority) {
+        _priorities.update { current ->
+            if (priority in current) current - priority else listOf(priority) + current
+        }
+    }
+
+    fun setSort(value: StoreSort) {
+        _sort.value = value
+    }
+
+    /** Persisted: the channel decides what counts as an update everywhere, not just in this list. */
+    fun setChannel(value: StoreChannel) {
+        settings.setUpdateChannel(value.preference)
+    }
+
+    fun refresh() {
+        viewModelScope.launch { dataSource.refresh(force = true) }
+    }
+
+    /** The three controls that reorder the list, as one value so `combine` stays readable. */
+    private data class View(
+        val sort: StoreSort,
+        val priorities: List<StorePriority>,
+        val channel: StoreChannel,
+    )
+
+    private fun view(): Flow<View> =
+        combine(_sort, _priorities, channel) { sort, priorities, channel ->
+            View(sort, priorities, channel)
+        }
+
+    private fun entryFor(
+        module: OnlineModule,
+        installed: Map<String, RepoVersion>,
+        channel: StoreChannel,
+        muted: Set<String>,
+        storeInstalls: Map<String, StoreInstall>,
+    ): StoreEntry =
+        StoreEntry(
+            module = module,
+            latest = module.latestOn(channel),
+            installed = installed[module.name],
+            updatesMuted = module.name in muted,
+            storeInstall = storeInstalls[module.name],
+        )
+
+    private fun StoreEntry.matches(query: String): Boolean {
+        if (query.isBlank()) return true
+        return module.title.contains(query, ignoreCase = true) ||
+            module.name.contains(query, ignoreCase = true) ||
+            module.summary?.contains(query, ignoreCase = true) == true
+    }
+
+    /**
+     * Updates come first by default, mirroring the Modules list's "enabled first": a list's first
+     * job is to say what needs attention. It is a separate toggle rather than a fourth sort order
+     * because it answers a different question from "in what order do I want to browse".
+     */
+    private fun comparatorFor(view: View): Comparator<StoreEntry> {
+        val order: Comparator<StoreEntry> =
+            when (view.sort) {
+                // ISO-8601 in UTC sorts correctly as text, so this needs no date parsing per row.
+                StoreSort.RecentlyUpdated ->
+                    compareByDescending { it.module.latestReleaseTime.orEmpty() }
+                StoreSort.Name -> compareBy { it.module.title.lowercase() }
+                StoreSort.MostStarred ->
+                    compareByDescending<StoreEntry> { it.module.stargazerCount ?: 0 }
+                        .thenBy { it.module.title.lowercase() }
+            }
+        // Applied outermost-last, so the most recently chosen group ends up the primary key.
+        return view.priorities.reversed().fold(order) { acc, priority ->
+            compareByDescending<StoreEntry> { priority.applies(it) }.then(acc)
+        }
+    }
+}

@@ -58,7 +58,7 @@ android {
 
   externalNativeBuild { cmake { path("src/main/jni/CMakeLists.txt") } }
 
-  namespace = "org.matrix.vector.daemon"
+  namespace = "org.jessicals.daemon"
 }
 
 /**
@@ -80,7 +80,7 @@ abstract class GenerateSignInfoTask : DefaultTask() {
 
   @TaskAction
   fun generate() {
-    val outSrc = outputDir.get().file("org/matrix/vector/daemon/utils/SignInfo.kt").asFile
+    val outSrc = outputDir.get().file("org/jessicals/daemon/utils/SignInfo.kt").asFile
     outSrc.parentFile.mkdirs()
     val certificateInfo =
         KeystoreHelper.getCertificateInfo(
@@ -94,7 +94,7 @@ abstract class GenerateSignInfoTask : DefaultTask() {
     PrintStream(outSrc)
         .print(
             """
-            |package org.matrix.vector.daemon.utils
+            |package org.jessicals.daemon.utils
             |
             |object SignInfo {
             |    @JvmField

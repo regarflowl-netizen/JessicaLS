@@ -15,7 +15,7 @@
 #include "jni/jni_hooks.h"
 #include "jni/resources_hook.h"
 
-namespace vector::native::jni {
+namespace jessicals::native::jni {
 
 // --- Type Aliases for Native Android Framework Functions ---
 
@@ -487,4 +487,4 @@ static JNINativeMethod gMethods[] = {
                          "(JLjava/lang/Object;Landroid/content/res/Resources;)V")};
 
 void RegisterResourcesHook(JNIEnv *env) { REGISTER_VECTOR_NATIVE_METHODS(ResourcesHook); }
-}  // namespace vector::native::jni
+}  // namespace jessicals::native::jni

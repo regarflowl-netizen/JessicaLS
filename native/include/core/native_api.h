@@ -89,7 +89,7 @@ struct NativeAPIEntries {
 
 // NOTE: Module developers should not include the following INTERNAL definitions.
 
-namespace vector::native {
+namespace jessicals::native {
 
 // The entry point function that native modules must export (`native_init`).
 using NativeInit = NativeOnModuleLoaded (*)(const NativeAPIEntries *entries);
@@ -144,4 +144,4 @@ inline int UnhookInline(void *original) {
     return DobbyDestroy(original);
 }
 
-}  // namespace vector::native
+}  // namespace jessicals::native

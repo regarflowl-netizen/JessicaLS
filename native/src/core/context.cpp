@@ -3,7 +3,7 @@
 #include "core/config_bridge.h"
 #include "jni/jni_hooks.h"
 
-namespace vector::native {
+namespace jessicals::native {
 
 // Instantiate the singleton pointers for Context and ConfigBridge.
 std::unique_ptr<Context> Context::instance_;
@@ -136,4 +136,4 @@ lsplant::ScopedLocalRef<jclass> Context::FindClassFromLoader(JNIEnv *env, jobjec
     return {env, nullptr};
 }
 
-}  // namespace vector::native
+}  // namespace jessicals::native

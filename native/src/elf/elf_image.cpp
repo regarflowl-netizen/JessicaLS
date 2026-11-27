@@ -14,7 +14,7 @@
 
 #include "common/logging.h"
 
-namespace vector::native {
+namespace jessicals::native {
 
 namespace {
 // Helper to safely cast an offset from a base pointer.
@@ -535,4 +535,4 @@ bool ElfImage::findModuleBase() {
     return true;
 }
 
-}  // namespace vector::native
+}  // namespace jessicals::native

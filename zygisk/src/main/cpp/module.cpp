@@ -12,7 +12,7 @@
 
 #include "ipc_bridge.h"
 
-namespace vector::native::module {
+namespace jessicals::native::module {
 
 // --- Process UID Constants ---
 // Values used to identify special Android processes to avoid injection.
@@ -61,19 +61,19 @@ private:
 };
 
 /**
- * @class VectorModule
+ * @class JessicaLSModule
  * @brief The core implementation of the Zygisk module for the Vector framework.
  *
  * This class is the main entry point for Zygisk. It inherits from:
  * - zygisk::ModuleBase:      To receive lifecycle callbacks from the Zygisk loader.
- * - vector::native::Context: To gain the core injection capabilities (DEX loading, ART hooking)
+ * - jessicals::native::Context: To gain the core injection capabilities (DEX loading, ART hooking)
  *                            from the 'native' library.
  *
  * It orchestrates the injection process by deciding which processes to target,
  * using the IPCBridge to fetch the framework from the manager service, and then
  * using the Context base to perform the actual injection.
  */
-class VectorModule : public zygisk::ModuleBase, public vector::native::Context {
+class JessicaLSModule : public zygisk::ModuleBase, public jessicals::native::Context {
 public:
     void onLoad(zygisk::Api *api, JNIEnv *env) override;
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override;
@@ -126,7 +126,7 @@ private:
             [](auto symbol) { return ElfSymbolCache::GetArt()->getSymbAddress(symbol); },
         .art_symbol_prefix_resolver =
             [](auto symbol) { return ElfSymbolCache::GetArt()->getSymbPrefixFirstAddress(symbol); },
-        .generated_class_name = "Vector_",
+        .generated_class_name = "JessicaLS_",
         .generated_source_name = "Dobby",
     };
 
@@ -136,10 +136,10 @@ private:
 };
 
 // =========================================================================================
-// Implementation of VectorModule
+// Implementation of JessicaLSModule
 // =========================================================================================
 
-void VectorModule::LoadDex(JNIEnv *env, PreloadedDex &&dex) {
+void JessicaLSModule::LoadDex(JNIEnv *env, PreloadedDex &&dex) {
     LOGV("Loading framework DEX into memory (size: {}).", dex.size());
 
     // Get the system ClassLoader. This will be the parent of our new loader.
@@ -197,7 +197,7 @@ void VectorModule::LoadDex(JNIEnv *env, PreloadedDex &&dex) {
     LOGV("Framework ClassLoader created successfully.");
 }
 
-void VectorModule::SetupEntryClass(JNIEnv *env) {
+void JessicaLSModule::SetupEntryClass(JNIEnv *env) {
     if (!inject_class_loader_) {
         LOGE("Cannot setup entry class: ClassLoader is null.");
         return;
@@ -206,7 +206,7 @@ void VectorModule::SetupEntryClass(JNIEnv *env) {
     // Use the obfuscation map from the config to get the real class name.
     const auto &obfs_map = ConfigBridge::GetInstance()->obfuscation_map();
     std::string entry_class_name;
-    entry_class_name = obfs_map.at("org.matrix.vector.core.") + "Main";
+    entry_class_name = obfs_map.at("org.jessicals.core.") + "Main";
 
     // We must find the class through our custom ClassLoader.
     auto entry_class = this->FindClassFromLoader(env, inject_class_loader_, entry_class_name);
@@ -220,7 +220,7 @@ void VectorModule::SetupEntryClass(JNIEnv *env) {
     LOGV("Framework entry class '{}' located.", entry_class_name.c_str());
 }
 
-void VectorModule::onLoad(zygisk::Api *api, JNIEnv *env) {
+void JessicaLSModule::onLoad(zygisk::Api *api, JNIEnv *env) {
     this->api_ = api;
     this->env_ = env;
 
@@ -230,7 +230,7 @@ void VectorModule::onLoad(zygisk::Api *api, JNIEnv *env) {
     LOGD("Vector Zygisk module loaded");
 }
 
-void VectorModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
+void JessicaLSModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
     // Reset state for this new process fork.
     should_inject_ = false;
     is_manager_app_ = false;
@@ -312,7 +312,7 @@ void VectorModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
     LOGV("Process '{}' (UID: {}) is marked for injection.", nice_name_str.get(), args->uid);
 }
 
-void VectorModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
+void JessicaLSModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
     if (!should_inject_) {
         SetAllowUnload(true);  // Not a target, allow module to be unloaded.
         return;
@@ -376,7 +376,7 @@ void VectorModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
     SetAllowUnload(false);
 }
 
-void VectorModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
+void JessicaLSModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
     // The system server is always a target for injection.
     should_inject_ = true;
     LOGI("System server process detected. Marking for injection.");
@@ -385,7 +385,7 @@ void VectorModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
     IPCBridge::GetInstance().Initialize(env_);
 }
 
-void VectorModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args) {
+void JessicaLSModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args) {
     if (!should_inject_) {
         SetAllowUnload(true);
         return;
@@ -422,7 +422,7 @@ void VectorModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args
                           ipc_bridge.IsSystemServerRunning(env_);
     // The real `serial` service is registered by then, and a lookup returning it would be
     // indistinguishable from a successful rendezvous.
-    std::string bridgeServiceName = is_late_inject ? "serial_vector" : "serial";
+    std::string bridgeServiceName = is_late_inject ? "serial_jessicals" : "serial";
     auto system_binder = ipc_bridge.RequestSystemServerBinder(env_, bridgeServiceName);
     if (!system_binder) {
         LOGE("Failed to get system server IPC binder. Aborting injection.");
@@ -474,7 +474,7 @@ void VectorModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args
     SetAllowUnload(false);
 }
 
-void VectorModule::SetAllowUnload(bool unload) {
+void JessicaLSModule::SetAllowUnload(bool unload) {
     if (api_ && unload) {
         LOGD("Allowing Zygisk to unload module library.");
         api_->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
@@ -490,9 +490,9 @@ void VectorModule::SetAllowUnload(bool unload) {
     }
 }
 
-}  // namespace vector::native::module
+}  // namespace jessicals::native::module
 
 // =========================================================================================
 // Zygisk Module Registration
 // =========================================================================================
-REGISTER_ZYGISK_MODULE(vector::native::module::VectorModule);
+REGISTER_ZYGISK_MODULE(jessicals::native::module::JessicaLSModule);

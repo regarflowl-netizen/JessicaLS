@@ -10,7 +10,7 @@
 // We include the JNI bridge from 'native' to leverage its helper functions.
 #include <jni/jni_bridge.h>
 
-namespace vector::native::module {
+namespace jessicals::native::module {
 
 /**
  * @class IPCBridge
@@ -184,4 +184,4 @@ private:
     jmethodID exec_transact_replace_method_id_ = nullptr;
 };
 
-}  // namespace vector::native::module
+}  // namespace jessicals::native::module

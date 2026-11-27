@@ -12,7 +12,7 @@
  *
  */
 
-namespace vector::native::jni {
+namespace jessicals::native::jni {
 
 /**
  * @brief Returns the number of elements in a statically-allocated C-style array.
@@ -37,20 +37,20 @@ template <typename T, size_t N>
  * It reads the obfuscation map to find the correct, potentially obfuscated,
  * package name for the native bridge classes.
  *
- * @return The JNI signature prefix (e.g., "org/matrix/vector/nativebridge/").
+ * @return The JNI signature prefix (e.g., "org/jessicals/nativebridge/").
  */
 inline std::string GetNativeBridgeSignature() {
     auto *bridge = ConfigBridge::GetInstance();
     if (bridge) {
         const auto &obfs_map = bridge->obfuscation_map();
         // The key must match what the Java build script places in the map.
-        auto it = obfs_map.find("org.matrix.vector.nativebridge.");
+        auto it = obfs_map.find("org.jessicals.nativebridge.");
         if (it != obfs_map.end()) {
             return it->second;
         }
     }
     // Fallback or default value if not found.
-    return "org/matrix/vector/nativebridge/";
+    return "org/jessicals/nativebridge/";
 }
 
 /**
@@ -92,7 +92,7 @@ inline bool RegisterNativeMethodsInternal(JNIEnv *env, std::string_view class_na
  */
 #define VECTOR_NATIVE_METHOD(className, functionName, signature)                                   \
     {#functionName, signature,                                                                     \
-     VECTOR_JNI_CAST(void *)(Java_org_matrix_vector_nativebridge_##className##_##functionName)}
+     VECTOR_JNI_CAST(void *)(Java_org_jessicals_nativebridge_##className##_##functionName)}
 
 /**
  * @def JNI_START
@@ -109,7 +109,7 @@ inline bool RegisterNativeMethodsInternal(JNIEnv *env, std::string_view class_na
  */
 #define VECTOR_DEF_NATIVE_METHOD(ret, className, functionName, ...)                                \
     extern "C" JNIEXPORT ret JNICALL                                                               \
-        Java_org_matrix_vector_nativebridge_##className##_##functionName(JNI_START, ##__VA_ARGS__)
+        Java_org_jessicals_nativebridge_##className##_##functionName(JNI_START, ##__VA_ARGS__)
 
 /**
  * @def REGISTER_VECTOR_NATIVE_METHODS(class_name)
@@ -121,4 +121,4 @@ inline bool RegisterNativeMethodsInternal(JNIEnv *env, std::string_view class_na
     RegisterNativeMethodsInternal(env, GetNativeBridgeSignature() + #class_name, gMethods,         \
                                   ArraySize(gMethods))
 
-}  // namespace vector::native::jni
+}  // namespace jessicals::native::jni

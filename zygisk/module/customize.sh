@@ -54,16 +54,19 @@ extract() {
 # =========================================================
 
 VERSION=$(grep_prop version "${TMPDIR}/module.prop")
-ui_print "- Vector version ${VERSION}"
+ui_print "- JessicaLS version ${VERSION}"
 
-# Disable existing LSPosed installation
-LSPOSED_DIR="/data/adb/modules/zygisk_lsposed"
-if [ -d "$LSPOSED_DIR" ]; then
-    ui_print "*********************************************************"
-    ui_print "LSPosed installation detected, disabling it for Vector"
-    touch "$LSPOSED_DIR/disable"
-    ui_print "*********************************************************"
-fi
+# Disable conflicting Xposed framework installations without touching /data/adb/lspd user data
+for CONFLICT_ID in zygisk_lsposed zygisk_vector; do
+    CONFLICT_DIR="/data/adb/modules/$CONFLICT_ID"
+    if [ -d "$CONFLICT_DIR" ]; then
+        ui_print "*********************************************************"
+        ui_print "Conflicting module ($CONFLICT_ID) detected, disabling it for JessicaLS"
+        ui_print "Existing user data in /data/adb/lspd is preserved"
+        touch "$CONFLICT_DIR/disable"
+        ui_print "*********************************************************"
+    fi
+done
 
 # 1. Map architecture to standard ABI paths, eliminating duplicate logic
 case "$ARCH" in
@@ -82,7 +85,7 @@ esac
 ui_print "- Device platform: $ARCH ($ABI32 / $ABI64)"
 
 ui_print "- Extracting root module files"
-for file in module.prop action.sh service.sh uninstall.sh sepolicy.rule framework/vector.dex cli daemon.apk daemon manager.apk; do
+for file in module.prop action.sh service.sh uninstall.sh sepolicy.rule framework/jessicals.dex cli daemon.apk daemon manager.apk; do
     extract "$ZIPFILE" "$file" "$MODPATH"
 done
 
@@ -139,4 +142,4 @@ if [ "$(grep_prop ro.maple.enable)" = "1" ]; then
     echo "ro.maple.enable=0" >>"$MODPATH/system.prop"
 fi
 
-ui_print "- Welcome to Vector!"
+ui_print "- Welcome to JessicaLS!"

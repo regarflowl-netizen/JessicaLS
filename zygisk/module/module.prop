@@ -1,7 +1,6 @@
-id=zygisk_vector
-name=Vector
+id=zygisk_jessicals
+name=JessicaLS
 version=${versionName} (${versionCode}-${versionHash})
 versionCode=${versionCode}
-author=JingMatrix
-description=A modern, Xposed-compatible framework for Android application hooking. (Android 8.1 ~ 17)
-updateJson=https://raw.githubusercontent.com/JingMatrix/Vector/master/zygisk/update.json
+author=JessicaLS (forked from JingMatrix/Vector)
+description=JessicaLS Framework — a modern, Xposed-compatible ART hooking framework forked from Vector. (Android 8.1 ~ 17)

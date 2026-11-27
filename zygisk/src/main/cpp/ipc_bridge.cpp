@@ -12,7 +12,7 @@ using namespace std::literals::string_view_literals;
 
 #include <common/logging.h>
 
-namespace vector::native::module {
+namespace jessicals::native::module {
 
 // Store the ID of the last caller whose framework transaction failed.
 // It's initialized to a value that won't match.
@@ -537,7 +537,7 @@ void IPCBridge::HookBridge(JNIEnv *env) {
     // Get framework-specific Java classes and methods ---
     const auto &obfs_map = ConfigBridge::GetInstance()->obfuscation_map();
     std::string bridge_service_class_name;
-    bridge_service_class_name = obfs_map.at("org.matrix.vector.service.") + "BridgeService";
+    bridge_service_class_name = obfs_map.at("org.jessicals.service.") + "BridgeService";
 
     auto bridge_class_ref =
         Context::GetInstance()->FindClassFromCurrentLoader(env, bridge_service_class_name);
@@ -590,4 +590,4 @@ void IPCBridge::HookBridge(JNIEnv *env) {
     LOGI("IPC Bridge JNI hook installed successfully.");
 }
 
-}  // namespace vector::native::module
+}  // namespace jessicals::native::module

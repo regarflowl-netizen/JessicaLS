@@ -94,7 +94,7 @@ abstract class GitLatestTagValueSource : ValueSource<String, ValueSourceParamete
  * up by anyone who reads it off a device, and is gone once the run is. The commit that was pushed
  * is the one that identifies the build.
  *
- * So the workflow passes both in: `VECTOR_BUILD_REPOSITORY` and `VECTOR_BUILD_COMMIT`, each taken
+ * So the workflow passes both in: `JESSICALS_BUILD_REPOSITORY` and `JESSICALS_BUILD_COMMIT`, each taken
  * from `github.event.pull_request.head.*` when there is a pull request and from the ordinary
  * default when there is not — outside a pull request the two agree anyway. Absent either, this
  * falls back to what the environment says and to `HEAD`, which covers a workflow too old to set
@@ -210,17 +210,17 @@ val versionHashProvider =
         // the branch that was pushed; GitHub's defaults name the run that built it.
         parameters.buildRepository.set(
             providers
-                .environmentVariable("VECTOR_BUILD_REPOSITORY")
+                .environmentVariable("JESSICALS_BUILD_REPOSITORY")
                 .orElse(providers.environmentVariable("GITHUB_REPOSITORY"))
                 .orElse("")
         )
-        parameters.buildCommit.set(providers.environmentVariable("VECTOR_BUILD_COMMIT").orElse(""))
+        parameters.buildCommit.set(providers.environmentVariable("JESSICALS_BUILD_COMMIT").orElse(""))
     }
 val versionNameProvider = providers.of(GitLatestTagValueSource::class.java) {}
 
 val injectedPackageName = "com.android.shell"
 val injectedPackageUid = 2000
-val defaultManagerPackageName = "org.matrix.vector.manager"
+val defaultManagerPackageName = "org.jessicals.manager"
 
 val androidTargetSdkVersion = 37
 val androidMinSdkVersion = 27
@@ -302,7 +302,7 @@ subprojects {
                 val args =
                     listOf(
                         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-                        "-DVECTOR_ROOT=${rootDir.absolutePath}",
+                        "-DJESSICALS_ROOT=${rootDir.absolutePath}",
                         // Enforce 16 KB page size alignment for Android 15+ compatibility
                         "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
                         "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384",

@@ -5,12 +5,12 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.util.Log;
 
-import org.matrix.vector.util.Utils;
-import org.matrix.vector.impl.hooks.VectorNativeHooker;
-import org.matrix.vector.impl.hooks.VectorInvocation;
-import org.matrix.vector.impl.hooks.VectorLegacyCallback;
-import org.matrix.vector.nativebridge.HookBridge;
-import org.matrix.vector.nativebridge.ResourcesHook;
+import org.jessicals.util.Utils;
+import org.jessicals.impl.hooks.JessicaLSNativeHooker;
+import org.jessicals.impl.hooks.JessicaLSInvocation;
+import org.jessicals.impl.hooks.JessicaLSLegacyCallback;
+import org.jessicals.nativebridge.HookBridge;
+import org.jessicals.nativebridge.ResourcesHook;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
@@ -43,7 +43,7 @@ public final class XposedBridge {
     /**
      * @hide
      */
-    public static final String TAG = "VectorLegacyBridge";
+    public static final String TAG = "JessicaLSLegacyBridge";
 
     /**
      * @deprecated Use {@link #getXposedVersion()} instead.
@@ -142,7 +142,7 @@ public final class XposedBridge {
         // framework's own that is wanted: the platform's returns an empty string for any
         // UnknownHostException cause chain, so a module logging a failed request landed an empty
         // line in the modules log.
-        String logStr = org.matrix.vector.util.Log.getStackTraceString(t);
+        String logStr = org.jessicals.util.Log.getStackTraceString(t);
         Log.e(TAG, logStr);
     }
 
@@ -196,7 +196,7 @@ public final class XposedBridge {
             throw new IllegalArgumentException("callback should not be null!");
         }
 
-        if (!HookBridge.hookMethod(false, (Executable) hookMethod, VectorNativeHooker.class, callback.priority, callback)) {
+        if (!HookBridge.hookMethod(false, (Executable) hookMethod, JessicaLSNativeHooker.class, callback.priority, callback)) {
             log("Failed to hook " + hookMethod);
             return null;
         }
@@ -313,7 +313,7 @@ public final class XposedBridge {
             throw new IllegalArgumentException("method must be of type Method or Constructor");
         }
 
-        return VectorInvocation.invokeOriginal((Executable) method, thisObject, args);
+        return JessicaLSInvocation.invokeOriginal((Executable) method, thisObject, args);
     }
 
     /**
@@ -373,12 +373,12 @@ public final class XposedBridge {
 
     public static class LegacyApiSupport<T extends Executable> {
         private final XC_MethodHook.MethodHookParam<T> param;
-        private final VectorLegacyCallback<T> callback;
+        private final JessicaLSLegacyCallback<T> callback;
         private final Object[] snapshot;
 
         private int beforeIdx;
 
-        public LegacyApiSupport(VectorLegacyCallback<T> callback, Object[] legacySnapshot) {
+        public LegacyApiSupport(JessicaLSLegacyCallback<T> callback, Object[] legacySnapshot) {
             this.param = new XC_MethodHook.MethodHookParam<>();
             this.callback = callback;
             this.snapshot = legacySnapshot;
@@ -424,7 +424,7 @@ public final class XposedBridge {
             syncronizeApi(param, callback, false);
         }
 
-        private void syncronizeApi(XC_MethodHook.MethodHookParam<T> param, VectorLegacyCallback<T> callback, boolean forward) {
+        private void syncronizeApi(XC_MethodHook.MethodHookParam<T> param, JessicaLSLegacyCallback<T> callback, boolean forward) {
             if (forward) {
                 param.method = callback.getMethod();
                 param.thisObject = callback.getThisObject();

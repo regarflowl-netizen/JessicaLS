@@ -2,10 +2,10 @@
 #include "jni/jni_bridge.h"
 #include "jni/jni_hooks.h"
 
-namespace vector::native::jni {
+namespace jessicals::native::jni {
 VECTOR_DEF_NATIVE_METHOD(void, NativeAPI, recordNativeEntrypoint, jstring jstr) {
     lsplant::JUTFString str(env, jstr);
-    vector::native::RegisterNativeLib(str);
+    jessicals::native::RegisterNativeLib(str);
 }
 
 static JNINativeMethod gMethods[] = {
@@ -13,4 +13,4 @@ static JNINativeMethod gMethods[] = {
 
 void RegisterNativeApiBridge(JNIEnv *env) { REGISTER_VECTOR_NATIVE_METHODS(NativeAPI); }
 
-}  // namespace vector::native::jni
+}  // namespace jessicals::native::jni
