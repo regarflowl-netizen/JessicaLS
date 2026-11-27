@@ -22,7 +22,11 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
+import org.jessicals.manager.ipc.PackageEvent
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import org.jessicals.ipc.IManagerService
@@ -265,13 +269,25 @@ object ServiceLocator {
      * revision, and the platform alone already delivers ADDED and REPLACED for a single update — a
      * repeat is the case this collector was written for, not a new one.
      */
+    @OptIn(FlowPreview::class)
     private fun observePackageChanges() {
         appScope.launch {
-            merge(context.packageEventsFlow(), context.daemonPackageEventsFlow()).collect {
-                apps.invalidate()
-                modules.refresh()
-                modules.notePackagesChanged()
-            }
+            merge(context.packageEventsFlow(), context.daemonPackageEventsFlow())
+                .onEach { event ->
+                    val pkg =
+                        when (event) {
+                            is PackageEvent.Added -> event.packageName
+                            is PackageEvent.Removed -> event.packageName
+                            is PackageEvent.Changed -> event.packageName
+                        }
+                    moduleDetection.invalidatePackage(pkg)
+                }
+                .debounce(250)
+                .collect {
+                    apps.invalidate()
+                    modules.refresh()
+                    modules.notePackagesChanged()
+                }
         }
     }
 
@@ -289,7 +305,7 @@ object ServiceLocator {
      * prefetch failed would be worse than one that is merely slow.
      */
     fun prefetch() {
-        appScope.launch { runCatching { apps.getInstalledApps() } }
+        appScope.launch { runCatching { apps.moduleScanPackages(false) } }
         appScope.launch { runCatching { store.refresh(false) } }
         // From disk only. Opening the manager is not by itself a reason to talk to GitHub, and
         // asking for a revalidation here would override Home's own gate — the one that decides how

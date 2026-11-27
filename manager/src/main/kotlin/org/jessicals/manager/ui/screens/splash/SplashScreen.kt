@@ -1,5 +1,6 @@
 package org.jessicals.manager.ui.screens.splash
 
+import android.os.SystemClock
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -31,7 +32,7 @@ import kotlinx.coroutines.flow.first
 import org.jessicals.manager.logW
 
 /** How long the animation itself needs, so the statue is never cut off mid-fade. */
-private const val ANIMATION_MS = 800L
+private const val ANIMATION_MS = 260L
 
 /** The longest we wait on the daemon before showing the UI anyway, in its "not activated" state. */
 private const val DAEMON_TIMEOUT_MS = 2_500L
@@ -51,17 +52,18 @@ fun SplashGate(content: @Composable () -> Unit) {
     var ready by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // The handshake first, under a ceiling; then the artwork's own duration.
+        val t0 = SystemClock.elapsedRealtime()
         val bound =
             withTimeoutOrNull(DAEMON_TIMEOUT_MS) { ServiceLocator.service.first { it != null } }
         if (bound == null) {
             logW("splash: no daemon binder after ${DAEMON_TIMEOUT_MS}ms, continuing unactivated")
         }
-        delay(ANIMATION_MS)
+        val remaining = ANIMATION_MS - (SystemClock.elapsedRealtime() - t0)
+        if (remaining > 0) delay(remaining)
         ready = true
     }
 
-    Crossfade(targetState = ready, animationSpec = tween(320), label = "splashHandoff") { done ->
+    Crossfade(targetState = ready, animationSpec = tween(180), label = "splashHandoff") { done ->
         if (done) content() else WingedVictory()
     }
 }

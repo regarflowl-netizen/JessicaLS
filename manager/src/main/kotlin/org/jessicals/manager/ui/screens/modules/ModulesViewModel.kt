@@ -5,6 +5,11 @@ import android.content.pm.PackageManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.SharingStarted
@@ -104,6 +109,10 @@ class ModulesViewModel(
 ) : ViewModel() {
 
     private val _discovered = MutableStateFlow<List<UserModulesState>>(emptyList())
+    private var loadJob: Job? = null
+    private var factsJob: Job? = null
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val scanDispatcher = Dispatchers.IO.limitedParallelism(4)
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -399,13 +408,15 @@ class ModulesViewModel(
      * and by the reload after an uninstall — the two callers that know the cache is behind.
      */
     fun loadModules(refresh: Boolean = false) {
-        viewModelScope.launch {
-            _isLoading.update { true }
-            val tabs = withContext(Dispatchers.IO) { discover(refresh) }
-            _discovered.update { tabs }
-            _isLoading.update { false }
-            loadFacts(tabs)
-        }
+        loadJob?.cancel()
+        loadJob =
+            viewModelScope.launch {
+                _isLoading.update { true }
+                val tabs = withContext(Dispatchers.IO) { discover(refresh) }
+                _discovered.update { tabs }
+                _isLoading.update { false }
+                loadFacts(tabs)
+            }
     }
 
     /**
@@ -415,7 +426,9 @@ class ModulesViewModel(
      * appears immediately and the reach figures fill in.
      */
     private fun loadFacts(tabs: List<UserModulesState>) {
-        viewModelScope.launch(Dispatchers.IO) {
+        factsJob?.cancel()
+        factsJob =
+            viewModelScope.launch(Dispatchers.IO) {
             val api = daemonClient.getLibxposedApiVersion().getOrDefault(0)
             // One call for the whole list, package to reason. Absence is the answer for every
             // other module — it loaded, or it is switched off and there was nothing to load — so
@@ -426,10 +439,16 @@ class ModulesViewModel(
             // scoped app per module. Keyed by package *and* user: a device with a work profile or
             // a private space holds the same package twice, and collapsing them would let a row
             // depict the wrong profile's copy of an app.
+            // Reuse moduleScanPackages() instead of triggering a 400-app filterNoProcess scan.
             val byPackage =
-                ServiceLocator.apps.getInstalledApps().associateBy {
-                    it.packageName to it.userId
-                }
+                ServiceLocator.apps
+                    .moduleScanPackages(false)
+                    .getOrDefault(emptyList())
+                    .mapNotNull { pkg ->
+                        val appInfo = pkg.applicationInfo ?: return@mapNotNull null
+                        (pkg.packageName to (appInfo.uid / PER_USER_RANGE)) to appInfo
+                    }
+                    .toMap()
 
             val collected = mutableMapOf<ModuleKey, ModuleFacts>()
             // The daemon holds one scope per module package covering every user, so it is read
@@ -478,7 +497,7 @@ class ModulesViewModel(
                         scopePreview =
                             apps
                                 .asSequence()
-                                .mapNotNull { byPackage[it.packageName to it.userId]?.applicationInfo }
+                                .mapNotNull { byPackage[it.packageName to it.userId] }
                                 .take(REACH_PREVIEW_LIMIT)
                                 .toList(),
                     )
@@ -491,68 +510,67 @@ class ModulesViewModel(
     }
 
     private suspend fun discover(refresh: Boolean): List<UserModulesState> {
+        val totalStart = SystemClock.elapsedRealtime()
         val usersResult = daemonClient.getUsers()
+        val usersMs = SystemClock.elapsedRealtime() - totalStart
         usersResult.onFailure { e ->
             logW("modules: user list unavailable, treating the daemon as unreachable", e)
         }
         _daemonAvailable.value = usersResult.isSuccess
         val users = usersResult.getOrNull() ?: emptyList()
 
-        // Through the repository, so concurrent rescans join one enumeration. The package
-        // event driving this is delivered twice on purpose, and a handful of enumerations at once
-        // exhausts the daemon's binder heap — at which point a failed per-user query takes a whole
-        // profile out of the list.
+        val enumStart = SystemClock.elapsedRealtime()
         val scan = ServiceLocator.apps.moduleScanPackages(refresh)
+        val enumMs = SystemClock.elapsedRealtime() - enumStart
         scan.onFailure { e -> logE("modules: installed package list unavailable", e) }
         _scanFailed.value = scan.isFailure
         val packages = scan.getOrDefault(emptyList())
 
-        // Through the cache, not straight to ModuleDetection: inspecting a package means opening
-        // its APK and every split as a zip, and there are ~550 of those on a normal device. Keyed
-        // by version code and install time, so an unchanged package is a map lookup and only a
-        // newly installed or updated one is actually opened.
         val detection = ServiceLocator.moduleDetection
-        val startedAt = SystemClock.elapsedRealtime()
-        val allModules =
-            packages.mapNotNull { pkg ->
-                val appInfo = pkg.applicationInfo ?: return@mapNotNull null
-                val manifest =
-                    detection.inspect(
-                        appInfo,
-                        packageManager,
-                        pkg.versionCodeCompat,
-                        pkg.lastUpdateTime,
-                    )
-                if (!manifest.isModule) return@mapNotNull null
+        detection.resetRunCounter()
+        val inspectStart = SystemClock.elapsedRealtime()
+        val allModules = coroutineScope {
+            packages
+                .map { pkg ->
+                    async(scanDispatcher) {
+                        val appInfo = pkg.applicationInfo ?: return@async null
+                        val manifest =
+                            detection.inspect(
+                                appInfo,
+                                packageManager,
+                                pkg.versionCodeCompat,
+                                pkg.lastUpdateTime,
+                            )
+                        if (!manifest.isModule) return@async null
 
-                InstalledModule(
-                    packageName = pkg.packageName,
-                    userId = appInfo.uid / PER_USER_RANGE,
-                    appName = appInfo.loadLabel(packageManager).toString(),
-                    versionName = pkg.versionName ?: "",
-                    versionCode = pkg.versionCodeCompat,
-                    description = manifest.description,
-                    minVersion = manifest.minApiVersion,
-                    targetVersion = manifest.targetApiVersion,
-                    isLegacy = manifest.isLegacy,
-                    declaresApiVersion = manifest.declaresApiVersion,
-                    lastUpdateTime = pkg.lastUpdateTime,
-                    isEnabled = false, // merged in from the repository above
-                    applicationInfo = appInfo,
-                )
-            }
+                        InstalledModule(
+                            packageName = pkg.packageName,
+                            userId = appInfo.uid / PER_USER_RANGE,
+                            appName = appInfo.loadLabel(packageManager).toString(),
+                            versionName = pkg.versionName ?: "",
+                            versionCode = pkg.versionCodeCompat,
+                            description = manifest.description,
+                            minVersion = manifest.minApiVersion,
+                            targetVersion = manifest.targetApiVersion,
+                            isLegacy = manifest.isLegacy,
+                            declaresApiVersion = manifest.declaresApiVersion,
+                            lastUpdateTime = pkg.lastUpdateTime,
+                            isEnabled = false,
+                            applicationInfo = appInfo,
+                        )
+                    }
+                }
+                .awaitAll()
+                .filterNotNull()
+        }
+        val inspectMs = SystemClock.elapsedRealtime() - inspectStart
 
-        // Not on a failed scan: `flush` keeps only the keys whose package is in the set handed
-        // to it, so flushing the empty set writes an empty cache and makes the next good scan
-        // reopen every APK on the device.
         if (scan.isSuccess) detection.flush(packages.mapTo(mutableSetOf()) { it.packageName })
-        // The one number that explains a slow Modules panel: how many APKs this scan had to open.
-        // Everything else is a map lookup, so a large figure here on a second run means the cache
-        // key is wrong rather than that the device is slow.
+        val totalMs = SystemClock.elapsedRealtime() - totalStart
         logI(
-            "modules: scanned ${packages.size} packages in " +
-                "${SystemClock.elapsedRealtime() - startedAt}ms, " +
-                "opened ${detection.inspectedThisRun}",
+            "modules: scanned ${packages.size} pkgs (${allModules.size} modules, " +
+                "opened ${detection.inspectedThisRun}) in ${totalMs}ms " +
+                "[users=${usersMs}ms enum=${enumMs}ms inspect=${inspectMs}ms]",
         )
 
         val perUser =

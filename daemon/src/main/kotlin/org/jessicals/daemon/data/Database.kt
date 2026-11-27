@@ -21,6 +21,13 @@ class Database(context: Context? = FakeContext()) :
     db.execSQL("PRAGMA synchronous=NORMAL;")
   }
 
+  override fun onOpen(db: SQLiteDatabase) {
+    super.onOpen(db)
+    if (!db.isReadOnly) {
+      db.execSQL("CREATE INDEX IF NOT EXISTS scope_app_pkg_idx ON scope (app_pkg_name);")
+    }
+  }
+
   override fun onCreate(db: SQLiteDatabase) {
     Log.i(TAG, "Creating new JessicaLS database")
     db.execSQL(

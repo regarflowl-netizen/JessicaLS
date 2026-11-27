@@ -21,6 +21,9 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.toSize
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.android.awaitFrame
 
 /**
@@ -50,22 +53,26 @@ fun AmbientSurface(
         } ?: return
     val haptics = LocalHapticFeedback.current
 
+    val lifecycleOwner = LocalLifecycleOwner.current
     var frame by remember(kind) { mutableFloatStateOf(0f) }
-    var canvasSize by remember { mutableStateOf(Size.Zero) }
+    // Plain holder avoids writing Compose state during Canvas draw.
+    val canvasSize = remember { object { var value: Size = Size.Zero } }
 
-    LaunchedEffect(kind) {
-        var last = 0L
-        while (true) {
-            if (!renderer.isAnimating) {
-                awaitFrame()
-                last = 0L
-                continue
-            }
-            withFrameNanos { now ->
-                val dt = if (last == 0L) 16f else (now - last) / 1_000_000f
-                last = now
-                renderer.update(dt.coerceAtMost(64f), canvasSize)
-                frame += 1f
+    LaunchedEffect(kind, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            var last = 0L
+            while (true) {
+                if (!renderer.isAnimating) {
+                    awaitFrame()
+                    last = 0L
+                    continue
+                }
+                withFrameNanos { now ->
+                    val dt = if (last == 0L) 16f else (now - last) / 1_000_000f
+                    last = now
+                    renderer.update(dt.coerceAtMost(64f), canvasSize.value)
+                    frame += 1f
+                }
             }
         }
     }
@@ -115,7 +122,7 @@ fun AmbientSurface(
                     }
                 }
     ) {
-        canvasSize = size
+        canvasSize.value = size
         @Suppress("UNUSED_EXPRESSION") frame
         with(renderer) { render(tint) }
     }

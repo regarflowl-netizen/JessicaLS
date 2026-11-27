@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.util.Base64
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import org.jessicals.manager.logW
 import org.jessicals.ui.module.ModuleDetection
 import org.jessicals.ui.module.ModuleManifest
@@ -49,9 +50,19 @@ class ModuleDetectionCache(private val file: File) {
 
     @Volatile private var dirty = false
 
-    /** How many packages this run actually had to open, for the scan's own log line. */
-    @Volatile var inspectedThisRun = 0
-        private set
+    private val inspectedCounter = AtomicInteger(0)
+
+    val inspectedThisRun: Int
+        get() = inspectedCounter.get()
+
+    fun resetRunCounter() {
+        inspectedCounter.set(0)
+    }
+
+    fun invalidatePackage(packageName: String) {
+        entries.keys.removeIf { it.packageName == packageName }
+        touched.removeIf { it.packageName == packageName }
+    }
 
     /**
      * The manifest for [info], from the cache when the APK has not changed.
@@ -74,7 +85,7 @@ class ModuleDetectionCache(private val file: File) {
             return it
         }
         val manifest = ModuleDetection.inspect(info, packageManager)
-        inspectedThisRun++
+        inspectedCounter.incrementAndGet()
         entries[key] = manifest
         dirty = true
         return manifest
