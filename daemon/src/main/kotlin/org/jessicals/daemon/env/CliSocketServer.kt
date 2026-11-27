@@ -101,7 +101,7 @@ object CliSocketServer {
 
         if (logFile != null && logFile.exists()) {
           val response = CliResponse(success = true, isFdAttached = true)
-          output.writeUTF(VectorIPC.gson.toJson(response))
+          output.writeUTF(JessicaLSIPC.gson.toJson(response))
 
           // Open file and get raw FileDescriptor
           val fis = FileInputStream(logFile)
@@ -115,14 +115,14 @@ object CliSocketServer {
           return
         } else {
           output.writeUTF(
-              VectorIPC.gson.toJson(CliResponse(success = false, error = "Log file not found.")))
+              JessicaLSIPC.gson.toJson(CliResponse(success = false, error = "Log file not found.")))
           return
         }
       }
 
       // Standard commands go to CliHandler as usual
       val response = CliHandler.execute(request)
-      output.writeUTF(VectorIPC.gson.toJson(response))
+      output.writeUTF(JessicaLSIPC.gson.toJson(response))
     } finally {
       socket.close()
     }
