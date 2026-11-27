@@ -137,7 +137,7 @@ object JessicaLSModuleManager {
             }
 
             // Create the Context that will be injected into the module
-            val vectorContext =
+            val jessicaLSContext =
                 JessicaLSContext(
                     packageName = module.packageName,
                     applicationInfo = module.applicationInfo,
@@ -172,7 +172,7 @@ object JessicaLSModuleManager {
                         val moduleInstance = constructor.newInstance() as XposedModule
 
                         // detach() is per entry: only the instance that calls it stops.
-                        moduleInstance.attachFramework(vectorContext) {
+                        moduleInstance.attachFramework(jessicaLSContext) {
                             JessicaLSLifecycleManager.detach(moduleInstance)
                         }
 
@@ -195,7 +195,7 @@ object JessicaLSModuleManager {
             }
 
             val generation =
-                Generation(moduleClassLoader, vectorContext, entries, isSystemServer, processName)
+                Generation(moduleClassLoader, jessicaLSContext, entries, isSystemServer, processName)
             return generation to entries
         } catch (e: Throwable) {
             Log.e(TAG, "Fatal error loading module ${module.packageName}", e)
