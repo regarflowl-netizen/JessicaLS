@@ -22,7 +22,7 @@ class Database(context: Context? = FakeContext()) :
   }
 
   override fun onCreate(db: SQLiteDatabase) {
-    Log.i(TAG, "Creating new Vector database")
+    Log.i(TAG, "Creating new JessicaLS database")
     db.execSQL(
         """
         CREATE TABLE IF NOT EXISTS modules (

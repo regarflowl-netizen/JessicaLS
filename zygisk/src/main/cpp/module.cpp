@@ -227,7 +227,7 @@ void JessicaLSModule::onLoad(zygisk::Api *api, JNIEnv *env) {
     // Create two singlton instances for classes Context and ConfigBridge
     instance_.reset(this);
     ConfigImpl::Init();
-    LOGD("Vector Zygisk module loaded");
+    LOGD("JessicaLS Zygisk module loaded");
 }
 
 void JessicaLSModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
@@ -366,7 +366,7 @@ void JessicaLSModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
         JNI_FALSE, JNI_FALSE, args->nice_name, args->app_data_dir, binder.get(), is_manager_app_);
 
     if (entered) {
-        LOGV("Injected Vector framework into '{}'.", nice_name_str.get());
+        LOGV("Injected JessicaLS framework into '{}'.", nice_name_str.get());
     } else {
         LOGE("Framework entry failed in '{}'; this process runs without Xposed.",
              nice_name_str.get());
@@ -466,7 +466,7 @@ void JessicaLSModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *a
         is_manager_app_);
 
     if (entered) {
-        LOGI("Injected Vector framework into system_server.");
+        LOGI("Injected JessicaLS framework into system_server.");
     } else {
         LOGE("Framework entry failed in system_server; it runs without Xposed.");
     }
