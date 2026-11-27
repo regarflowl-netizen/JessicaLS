@@ -1,1 +1,0 @@
-{"nodes": [{"id": "$graphify-root$_services_manager_service_build_gradle_kts", "label": "build.gradle.kts", "file_type": "code", "source_file": "services/manager-service/build.gradle.kts", "source_location": "L1"}], "edges": [], "raw_calls": []}

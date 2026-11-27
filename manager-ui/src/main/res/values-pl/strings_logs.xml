@@ -45,7 +45,7 @@
     </plurals>
     <!-- The four distinct nothing-to-show states -->
     <string name="logs_state_daemon_title">Usługa jest nieosiągalna</string>
-    <string name="logs_state_daemon_body">Nic nie wiadomo o dzienniku, dopóki Vector nie jest uruchomiony. Z tego samego powodu pasek stanu na ekranie głównym nie jest zielony.</string>
+    <string name="logs_state_daemon_body">Nic nie wiadomo o dzienniku, dopóki JessicaLS nie jest uruchomiony. Z tego samego powodu pasek stanu na ekranie głównym nie jest zielony.</string>
     <string name="logs_state_nofile_title">Nie ma jeszcze pliku dziennika</string>
     <string name="logs_state_nofile_body">Usługa działa, ale nie otworzyła tego dziennika. W przypadku dziennika szczegółowego zwykle oznacza to, że szczegółowe rejestrowanie jest wyłączone.</string>
     <string name="logs_state_empty_title">Ten dziennik jest pusty</string>

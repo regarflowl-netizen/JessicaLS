@@ -85,7 +85,7 @@
     <string name="info_injected">Wstrzyknięty</string>
     <string name="info_not_injected">Niewstrzyknięty</string>
     <string name="status_notification">Powiadomienie o stanie</string>
-    <string name="status_notification_summary">Stałe powiadomienie pokazujące, że Vector jest uruchomiony.</string>
+    <string name="status_notification_summary">Stałe powiadomienie pokazujące, że JessicaLS jest uruchomiony.</string>
     <string name="force_launcher_icons">Nie pozwalaj aplikacjom ukrywać ikon w launcherze</string>
     <string name="force_launcher_icons_summary">Od Androida 10 aplikacja, która ukrywa własną ikonę launchera, otrzymuje z powrotem jedną ikonę, która otwiera stronę informacji o aplikacji. Wyłącz to, aby pozostała ukryta — launcher może się nie zaktualizować do czasu restartu. Nie dotyczy to aplikacji, które nigdy nie miały ikony launchera, w tym większość modułów.</string>
     <!-- Home: the community feed -->
@@ -211,7 +211,7 @@
     <string name="modules_incompatible">Wymaga API libxposed %1$d, którego ten framework nie zapewnia.</string>
     <string name="modules_incompatible_legacy">Wymaga API Xposed %1$d, którego ten framework nie zapewnia.</string>
     <string name="modules_api_behind">Zbudowany dla libxposed API %1$d. API %2$d zmieniło interfejs, więc ten moduł może w pełni nie działać.</string>
-    <string name="modules_no_daemon">Vector nie jest uruchomiony, więc lista modułów jest niedostępna. Otwórz stan systemu z poziomu strony głównej, aby sprawdzić przyczynę.</string>
+    <string name="modules_no_daemon">JessicaLS nie jest uruchomiony, więc lista modułów jest niedostępna. Otwórz stan systemu z poziomu strony głównej, aby sprawdzić przyczynę.</string>
     <!-- Built-in web viewer -->
     <string name="web_open_external">Otwórz w przeglądarce</string>
     <!-- The status header's living surface -->
@@ -428,7 +428,7 @@
     <string name="language_system">Domyślny systemowy</string>
     <string name="language_system_summary">Używaj języka ustawionego w telefonie</string>
     <string name="language_help_short">Tłumacz</string>
-    <string name="language_help">Pomóż tłumaczyć Vector</string>
+    <string name="language_help">Pomóż tłumaczyć JessicaLS</string>
     <string name="update_title">Aktualizacja frameworka</string>
     <string name="update_channel_canary">Kompilacja Canary</string>
     <string name="update_channel_release">Kompilacja stabilna</string>
@@ -443,7 +443,7 @@
     <string name="update_no_notes">W tym wydaniu nie opublikowano żadnych notatek.</string>
     <string name="update_no_root">Nie znaleziono implementacji roota, więc nic nie można wgrać.</string>
     <string name="update_root_unknown">Ta kompilacja frameworka nie informuje, która implementacja roota jest zainstalowana.</string>
-    <string name="update_root_multiple">Znaleziono dwie implementacje roota. Vector nie zgadnie, która z nich jest właścicielem modułu.</string>
+    <string name="update_root_multiple">Znaleziono dwie implementacje roota. JessicaLS nie zgadnie, która z nich jest właścicielem modułu.</string>
     <string name="update_failed_start">Nie można uruchomić instalatora.</string>
     <string name="update_failed_download">Nie udało się pobrać aktualizacji.</string>
     <string name="update_failed_exit">Instalator zakończył się niepowodzeniem (kod wyjścia %1$d).</string>
@@ -464,7 +464,7 @@
     <string name="scope_framework_restart_later">Później</string>
     <!-- Getting back into Vector, which parasitically has no launcher icon of its own -->
     <string name="launcher_title">Jak otworzyć Vectora?</string>
-    <string name="launcher_body">Vector nie jest zainstalowany jako aplikacja, więc w launcherze nie ma nic do pokazania. Oto sposoby jego otwarcia.</string>
+    <string name="launcher_body">JessicaLS nie jest zainstalowany jako aplikacja, więc w launcherze nie ma nic do pokazania. Oto sposoby jego otwarcia.</string>
     <string name="launcher_shortcut">Skrót na ekranie głównym</string>
     <string name="launcher_shortcut_create">Utwórz</string>
     <string name="launcher_shortcut_unsupported">Twój launcher nie akceptuje przypinania skrótów.</string>
@@ -473,16 +473,16 @@
     <string name="launcher_install">Zainstaluj jako aplikację</string>
     <string name="launcher_install_action">Zainstaluj</string>
     <string name="launcher_install_reinstall">Zainstaluj ponownie</string>
-    <string name="launcher_install_done">Vector jest zainstalowany. Otwórz go z launchera.</string>
+    <string name="launcher_install_done">JessicaLS jest zainstalowany. Otwórz go z launchera.</string>
     <string name="launcher_install_failed">Nie udało się zainstalować Vectora.</string>
     <string name="launcher_install_conflict">Kopia Vectora podpisana innym kluczem jest już zainstalowana. Trzeba ją usunąć, zanim ta się zmieści.</string>
     <string name="launcher_install_remove">Usuń ją</string>
     <string name="launcher_install_diverged">Zainstalowana kopia to inna wersja Vectora — nie ta uruchomiona tutaj. Ponowna instalacja ją zastąpi.</string>
     <string name="launcher_route_available">Dostępne</string>
-    <string name="launcher_note">Możesz też wybrać %1$s albo otworzyć Vector przyciskiem działania w %2$s.</string>
+    <string name="launcher_note">Możesz też wybrać %1$s albo otworzyć JessicaLS przyciskiem działania w %2$s.</string>
     <string name="launcher_root_generic">twoim menedżerze roota</string>
-    <string name="launcher_prompt_title">Vector nie ma jeszcze ikony</string>
-    <string name="launcher_prompt_body">Vector działa w ramach innego procesu i nie jest instalowany, więc nic nie pojawia się w launcherze, więc nie ma oczywistej drogi powrotu. Dodaj skrót na ekranie głównym lub zainstaluj go jako zwykłą aplikację.</string>
+    <string name="launcher_prompt_title">JessicaLS nie ma jeszcze ikony</string>
+    <string name="launcher_prompt_body">JessicaLS działa w ramach innego procesu i nie jest instalowany, więc nic nie pojawia się w launcherze, więc nie ma oczywistej drogi powrotu. Dodaj skrót na ekranie głównym lub zainstaluj go jako zwykłą aplikację.</string>
     <string name="launcher_prompt_never">Nie pytaj ponownie</string>
     <string name="action_install_other_user">Zainstaluj dla innego użytkownika</string>
     <string name="action_install_other_user_summary">Dodaje ten moduł do profilu, który go nie ma, aby można było określić tam jego zakres</string>

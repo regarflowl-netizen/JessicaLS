@@ -540,7 +540,7 @@ class SettingsRepository(context: Context) : StoreSettings, NetworkSettings {
 
     private companion object {
         /** The Winged Victory's patina. Kept as a literal so this file needs no UI imports. */
-        const val DEFAULT_SEED_COLOR = 0xFF6ABFCF.toInt()
+        const val DEFAULT_SEED_COLOR = 0xFFE8A838.toInt()
 
         /**
          * Must match an `AmbienceKind` key. An unknown one falls back harmlessly, but a stored

@@ -95,7 +95,7 @@ fun WingedVictory() {
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.ic_winged_victory),
+            painter = painterResource(id = R.drawable.ic_jessicals_foreground),
             contentDescription = null,
             tint = Color.Unspecified,
             // The drawable is a 108dp square whose figure runs nearly the full height of its

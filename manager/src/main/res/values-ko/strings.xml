@@ -136,7 +136,7 @@
         <item quantity="other">최근 %1$d개월</item>
     </plurals>
     <string name="settings_open_externally">링크를 브라우저에서 열기</string>
-    <string name="settings_open_externally_summary">꺼두면 GitHub 페이지가 Vector 안에서 열립니다.</string>
+    <string name="settings_open_externally_summary">꺼두면 GitHub 페이지가 JessicaLS 안에서 열립니다.</string>
 
     <string name="scope_use_recommended">모듈이 요청한 대로 두기</string>
     <string name="scope_select_visible">표시된 항목 모두 선택</string>
@@ -253,7 +253,7 @@
     <string name="language_system_summary">휴대전화에 설정된 언어를 따릅니다</string>
 
     <string name="language_help_short">번역</string>
-    <string name="language_help">Vector 번역에 참여하기</string>
+    <string name="language_help">JessicaLS 번역에 참여하기</string>
 
     <string name="update_title">프레임워크 업데이트</string>
     <string name="update_channel_canary">canary 빌드</string>
@@ -367,7 +367,7 @@
     <string name="crash_message">메시지</string>
     <string name="crash_where">위치</string>
     <string name="crash_when">시각</string>
-    <string name="crash_where_unknown">Vector 자체 코드에는 없음</string>
+    <string name="crash_where_unknown">JessicaLS 자체 코드에는 없음</string>
     <string name="crash_when_value">%1$s (%2$s 스레드)</string>
     <string name="crash_open_trace">스택 트레이스 보기</string>
     <string name="crash_trace">충돌</string>

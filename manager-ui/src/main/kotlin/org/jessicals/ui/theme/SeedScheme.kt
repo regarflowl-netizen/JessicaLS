@@ -40,7 +40,7 @@ object SeedScheme {
      * The Winged Victory's patina — the deepest of the eight tones in `ic_winged_victory.xml` — and
      * the app's identity colour when nothing else is chosen.
      */
-    const val DEFAULT_SEED: Int = 0xFF6ABFCF.toInt()
+    const val DEFAULT_SEED: Int = 0xFFE8A838.toInt()
 
     /**
      * Presets worth offering before someone reaches for the wheel.
