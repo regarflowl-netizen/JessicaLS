@@ -7,7 +7,7 @@ This document details the architecture and implementation of the `legacy` module
 The legacy compatibility subsystem spans multiple compilation boundaries to enforce strict separation between the API surface, the Dalvik/ART runtime, and the native execution environment.
 
 - [legacy](.): Contains the Java API surface (`de.robv.android.xposed.*`), state translation handlers (`LegacyDelegateImpl`), reflection caching mechanisms, and resource/shared preference overrides.
-- [xposed](../xposed): Manages the isolated classloaders (`VectorModuleClassLoader`), the Ahead-Of-Time (AOT) compiler deoptimizer (`VectorDeopter`), and the Dependency Injection (DI) framework.
+- [xposed](../xposed): Manages the isolated classloaders (`JessicaLSModuleClassLoader`), the Ahead-Of-Time (AOT) compiler deoptimizer (`JessicaLSDeopter`), and the Dependency Injection (DI) framework.
 - [native](../native): Houses the JNI bridges (`hook_bridge.cpp`, `resources_hook.cpp`), concurrent hook registries, stack-allocated invocation logic, in-memory DEX generation, and binary XML mutation routines.
 - [daemon](../daemon): Operates out-of-process with elevated privileges to provision SELinux-permissive directories and manage filesystem contexts for cross-process file sharing.
 
@@ -24,13 +24,13 @@ The `LegacyDelegateImpl` satisfies the `LegacyFrameworkDelegate` interface, acti
 
 ## Module Initialization
 
-Legacy modules are loaded during the initialization phase via `XposedInit.loadLegacyModules()`. The framework queries the daemon (`VectorServiceClient.INSTANCE.getLegacyModules()`) to retrieve the list of enabled APK paths.
+Legacy modules are loaded during the initialization phase via `XposedInit.loadLegacyModules()`. The framework queries the daemon (`JessicaLSServiceClient.INSTANCE.getLegacyModules()`) to retrieve the list of enabled APK paths.
 
-Modules are not loaded using standard Android mechanism. To prevent detection via `ClassLoader.getParent()` chain-walking and to eliminate residual file descriptors, `XposedInit.loadModule` utilizes `VectorModuleClassLoader`. This classloader loads the module APK directly into memory, isolating the module's execution environment from the host application's classpath.
+Modules are not loaded using standard Android mechanism. To prevent detection via `ClassLoader.getParent()` chain-walking and to eliminate residual file descriptors, `XposedInit.loadModule` utilizes `JessicaLSModuleClassLoader`. This classloader loads the module APK directly into memory, isolating the module's execution environment from the host application's classpath.
 
 Once mapped into memory, the framework parses two specific manifest files within the APK to initialize Java and native execution hooks:
 
-1. `assets/xposed_init`: Defines the Java entrypoint class, which is loaded via `VectorModuleClassLoader` and inspected for `IXposedMod` implementations to be registered with the internal callback arrays:
+1. `assets/xposed_init`: Defines the Java entrypoint class, which is loaded via `JessicaLSModuleClassLoader` and inspected for `IXposedMod` implementations to be registered with the internal callback arrays:
     - `IXposedHookZygoteInit`: Invoked immediately with a `StartupParam` structure containing the module path and system server status.
     - `IXposedHookLoadPackage`: Wrapped in `IXposedHookLoadPackage.Wrapper` and appended to the `XposedBridge.sLoadedPackageCallbacks` array.
     - `IXposedHookInitPackageResources`: Appended to `XposedBridge.sInitPackageResourcesCallbacks` array, which subsequently triggers the native resource hooking subsystem via `XposedInit.hookResources()`.
@@ -57,7 +57,7 @@ Legacy modules rely heavily on reflection to locate target methods and fields (e
 
 Modern Android Runtime (ART) environments utilize Ahead-Of-Time (AOT) compilation, which frequently inlines short methods into their callers. If an inlined method is hooked, the JNI trampoline will be bypassed because the caller executes the inlined machine code directly.
 
-To mitigate this, the `xposed` module implements `VectorDeopter`. During initialization or application load, `VectorDeopter.deoptMethods()` queries a registry of known inlined methods [VectorInlinedCallers](../xposed/src/main/kotlin/org/matrix/vector/impl/core/VectorInlinedCallers.kt). It iterates through these targets and issues a native command (`HookBridge.deoptimizeMethod`) to force ART to discard the compiled machine code for the target. This forces the method execution back into the ART interpreter (via `ClassLinker::SetEntryPointsToInterpreter` in `lsplant`), which strictly respects method boundaries and guarantees execution of the installed JNI trampolines.
+To mitigate this, the `xposed` module implements `JessicaLSDeopter`. During initialization or application load, `JessicaLSDeopter.deoptMethods()` queries a registry of known inlined methods [VectorInlinedCallers](../xposed/src/main/kotlin/org/jessicals/impl/core/VectorInlinedCallers.kt). It iterates through these targets and issues a native command (`HookBridge.deoptimizeMethod`) to force ART to discard the compiled machine code for the target. This forces the method execution back into the ART interpreter (via `ClassLinker::SetEntryPointsToInterpreter` in `lsplant`), which strictly respects method boundaries and guarantees execution of the installed JNI trampolines.
 
 ### Native Hook Registry and Execution State Translation
 
@@ -115,7 +115,7 @@ The `daemon` module operates with elevated privileges and provisions a specializ
 To utilize the safe-zone transparently, the `legacy` module intercepts the configuration saving mechanics within the module's own user interface process. During application load, `LegacyDelegateImpl` parses the module's APK metadata using `VectorMetaDataReader`. If the module declares an `xposedminversion` greater than 92 or contains the `xposedsharedprefs` flag, the framework triggers `hookNewXSP`. This routine applies two critical hooks to `android.app.ContextImpl`:
 
 1.  Flag Stripping: It hooks `checkMode` to intercept the mode integer. If the `MODE_WORLD_READABLE` bit is present, it suppresses the resulting `SecurityException` by setting the hook throwable to null.
-2.  Path Redirection: It hooks `getPreferencesDir` using an `XC_MethodReplacement`. Instead of returning the standard isolated data directory, it returns the daemon-provisioned safe-zone path obtained via `VectorServiceClient.INSTANCE.getPrefsPath`.
+2.  Path Redirection: It hooks `getPreferencesDir` using an `XC_MethodReplacement`. Instead of returning the standard isolated data directory, it returns the daemon-provisioned safe-zone path obtained via `JessicaLSServiceClient.INSTANCE.getPrefsPath`.
 
 When the module attempts to save its standard `SharedPreferences`, the Android framework transparently writes the XML file into the SELinux-permissive bridge.
 

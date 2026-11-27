@@ -19,19 +19,19 @@ When a transaction occurs, the hook inspects the transaction code. If it matches
 
 ### Phase 1: System Server Initialization
 The `system_server` acts as the primary proxy router for the framework. During the `postServerSpecialize` callback, the following sequence occurs:
-1. The native module queries `ServiceManager` for the rendezvous service, `serial` or `serial_vector` depending on whether a `system_server` was already running (see _Choosing the rendezvous name_ below).
+1. The native module queries `ServiceManager` for the rendezvous service, `serial` or `serial_jessicals` depending on whether a `system_server` was already running (see _Choosing the rendezvous name_ below).
 2. The module sends a `_VEC` transaction to retrieve a temporary binder, which it uses to fetch the framework DEX file descriptor and the obfuscation map.
 3. The module installs the JNI Binder Trap (`HookBridge`) and bootstraps the Kotlin layer via `Main.forkCommon`.
-4. Concurrently, the root daemon initiates a Binder transaction directly to the `system_server`. The JNI trap intercepts this, and BridgeService processes the `SEND_BINDER` action, storing the daemon's primary `IVectorDaemon` binder, sending back `system_server` context and linking a `DeathRecipient`.
+4. Concurrently, the root daemon initiates a Binder transaction directly to the `system_server`. The JNI trap intercepts this, and BridgeService processes the `SEND_BINDER` action, storing the daemon's primary `IJessicaLSDaemon` binder, sending back `system_server` context and linking a `DeathRecipient`.
 
 #### Choosing the rendezvous name
-`serial` is a real `system_server` service, registered long after specialization. At boot it is therefore free, and a binder found under it can only be the daemon's proxy. When Zygisk instead attaches to a `system_server` that booted without Vector, the real service is already registered, and a lookup returning it would be indistinguishable from a successful rendezvous; `serial_vector`, a name no platform service uses, is claimed for that case.
+`serial` is a real `system_server` service, registered long after specialization. At boot it is therefore free, and a binder found under it can only be the daemon's proxy. When Zygisk instead attaches to a `system_server` that booted without Vector, the real service is already registered, and a lookup returning it would be indistinguishable from a successful rendezvous; `serial_jessicals`, a name no platform service uses, is claimed for that case.
 
 The late case is NeoZygisk's late load — `ksud late-load`, a manual trigger, or a root session re-applied to a system that booted without one — which attaches to a `system_server` already serving and drives `postServerSpecialize` on a thread of its own ([NeoZygisk#174](https://github.com/JingMatrix/NeoZygisk/pull/174)). It says so through the `LATE_INJECT` runtime flag, and the module reads that first.
 
 Nothing tells the daemon, which the same `service.sh` starts either way, so it asks the one question both sides can answer alike: does `activity` already answer? Nothing has registered it during a boot, and a `system_server` that is serving has. The module falls back on the same probe wherever the flag is absent. At boot the two cannot disagree: the module's poll for the rendezvous runs on `system_server`'s own thread during specialization, so `activity` cannot appear while a daemon is still starting up behind it.
 
-`serial_vector` is the daemon's alone, so unlike `serial` nothing will ever come along and replace it. Once the module it existed for has let go of the binder, the daemon unregisters it through `registerClientCallback`, which is the only sequence servicemanager accepts — `tryUnregisterService` on its own is refused for as long as the service is marked as having a client, and for a name without a client callback that mark is never cleared.
+`serial_jessicals` is the daemon's alone, so unlike `serial` nothing will ever come along and replace it. Once the module it existed for has let go of the binder, the daemon unregisters it through `registerClientCallback`, which is the only sequence servicemanager accepts — `tryUnregisterService` on its own is refused for as long as the service is marked as having a client, and for a name without a client callback that mark is never cleared.
 
 #### When `system_server` restarts
 A soft reboot, a crash or `ctl.restart zygote` leaves the daemon running and replaces the process it was talking to. The `DeathRecipient` the daemon linked on the `activity` binder is what notices, which is why that binder is retained for as long as the link is meant to last: the notification lives exactly as long as the `BinderProxy` it was registered on.
@@ -43,7 +43,7 @@ Standard applications initialize their IPC connection by routing requests throug
 1. In `postAppSpecialize`, the application queries `ServiceManager` for the `activity` service (which resides in `system_server`).
 2. The application sends a `_VEC` transaction containing the `GET_BINDER` action, its process name, and a newly allocated heartbeat `BBinder`.
 3. The JNI trap inside `system_server` intercepts this transaction before the Activity Manager processes it.
-4. The `system_server`'s BridgeService forwards the application's UID, PID, and heartbeat binder to the root daemon via the `IVectorDaemon` binder acquired in Phase 1.
+4. The `system_server`'s BridgeService forwards the application's UID, PID, and heartbeat binder to the root daemon via the `IJessicaLSDaemon` binder acquired in Phase 1.
 5. The daemon evaluates the request against its internal scope state. If approved, it generates an `IFrameworkService` binder and returns it to the `system_server`, which writes it back to the waiting application's reply parcel.
 6. The application uses this dedicated binder to fetch its specific framework DEX and obfuscation map.
 
@@ -55,7 +55,7 @@ To manage process lifecycles without polling, the native module generates a dumm
 Vector does not write framework code to the /data partition.
 
 1. Asset Delivery: The root daemon provides the framework DEX via a `SharedMemory` file descriptor, using `kDexTransactionCode`. The C++ layer wraps this file descriptor in a `java.nio.DirectByteBuffer` and initializes a `dalvik.system.InMemoryDexClassLoader`.
-2. Dynamic Relinking: The daemon randomizes framework class names on each boot. The native module fetches a serialized dictionary over IPC, using `kObfuscationMapTransactionCode`. `SetupEntryClass` uses this map to locate the randomized entry point (`org.matrix.vector.core.Main`) and BridgeService, enabling the framework to link correctly at runtime.
+2. Dynamic Relinking: The daemon randomizes framework class names on each boot. The native module fetches a serialized dictionary over IPC, using `kObfuscationMapTransactionCode`. `SetupEntryClass` uses this map to locate the randomized entry point (`org.jessicals.core.Main`) and BridgeService, enabling the framework to link correctly at runtime.
 
 ## Parasitic Manager and Identity Transplantation
 

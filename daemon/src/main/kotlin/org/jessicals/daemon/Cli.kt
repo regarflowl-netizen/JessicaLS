@@ -32,7 +32,7 @@ data class CliResponse(
 )
 
 // --- IPC Client Logic ---
-object VectorIPC {
+object JessicaLSIPC {
   val gson: Gson =
       GsonBuilder()
           .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE) // Handles Any/Object fields
@@ -124,7 +124,7 @@ object OutputFormatter {
   @Suppress("UNCHECKED_CAST")
   fun print(response: CliResponse, isJson: Boolean): Int {
     if (isJson) {
-      println(VectorIPC.gson.toJson(response))
+      println(JessicaLSIPC.gson.toJson(response))
       return if (response.success) 0 else 1
     }
 
@@ -188,10 +188,10 @@ object OutputFormatter {
 
 // --- CLI Commands (picocli) ---
 @Command(
-    name = "vector-cli",
+    name = "jessicals-cli",
     mixinStandardHelpOptions = true,
-    version = ["Vector CLI ${BuildConfig.VERSION_NAME}"],
-    description = ["A fast, scriptable CLI for configuring the Vector Framework daemon."],
+    version = ["JessicaLS CLI ${BuildConfig.VERSION_NAME}"],
+    description = ["A fast, scriptable CLI for configuring the JessicaLS Framework daemon."],
     subcommands =
         [
             StatusCommand::class,
@@ -218,7 +218,7 @@ class Cli : Callable<Int> {
     fun main(args: Array<String>) {
       val uid = Process.myUid()
       if (uid != 0) {
-        System.err.println("Permission denied: Vector CLI must run as root.")
+        System.err.println("Permission denied: JessicaLS CLI must run as root.")
         exitProcess(1)
       }
       val mainThread = Thread.currentThread()
@@ -239,7 +239,7 @@ class StatusCommand : Callable<Int> {
 
   override fun call(): Int {
     val req = CliRequest(command = "status")
-    val res = VectorIPC.transmit(req)
+    val res = JessicaLSIPC.transmit(req)
     return OutputFormatter.print(res, parent.json)
   }
 }
@@ -260,19 +260,19 @@ class ModulesCommand {
             command = "modules",
             action = "ls",
             options = mapOf("enabled" to enabled, "disabled" to disabled))
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 
   @Command(name = "enable", description = ["Enable one or more modules (batch processing)"])
   fun enable(@Parameters(paramLabel = "PKG", arity = "1..*") pkgs: List<String>): Int {
     val req = CliRequest(command = "modules", action = "enable", targets = pkgs)
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 
   @Command(name = "disable", description = ["Disable one or more modules (batch processing)"])
   fun disable(@Parameters(paramLabel = "PKG", arity = "1..*") pkgs: List<String>): Int {
     val req = CliRequest(command = "modules", action = "disable", targets = pkgs)
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 }
 
@@ -283,7 +283,7 @@ class ScopeCommand {
   @Command(name = "ls", description = ["List apps in a module's scope"])
   fun ls(@Parameters(index = "0", paramLabel = "MODULE_PKG") modulePkg: String): Int {
     val req = CliRequest(command = "scope", action = "ls", targets = listOf(modulePkg))
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 
   @Command(name = "add", description = ["Append apps to scope (format: pkg/user_id)"])
@@ -292,7 +292,7 @@ class ScopeCommand {
       @Parameters(index = "1..*") apps: List<String>
   ): Int {
     val req = CliRequest(command = "scope", action = "add", targets = listOf(modulePkg) + apps)
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 
   @Command(name = "set", description = ["Overwrite entire scope (format: pkg/user_id)"])
@@ -301,7 +301,7 @@ class ScopeCommand {
       @Parameters(index = "1..*") apps: List<String>
   ): Int {
     val req = CliRequest(command = "scope", action = "set", targets = listOf(modulePkg) + apps)
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 
   @Command(name = "rm", description = ["Remove apps from scope (format: pkg/user_id)"])
@@ -310,7 +310,7 @@ class ScopeCommand {
       @Parameters(index = "1..*") apps: List<String>
   ): Int {
     val req = CliRequest(command = "scope", action = "rm", targets = listOf(modulePkg) + apps)
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 }
 
@@ -321,7 +321,7 @@ class ConfigCommand {
   @Command(name = "get", description = ["Get a config value"])
   fun get(@Parameters(paramLabel = "KEY") key: String): Int {
     val req = CliRequest(command = "config", action = "get", targets = listOf(key))
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 
   @Command(name = "set", description = ["Set a config value"])
@@ -330,7 +330,7 @@ class ConfigCommand {
       @Parameters(index = "1", paramLabel = "VALUE") value: String
   ): Int {
     val req = CliRequest(command = "config", action = "set", targets = listOf(key, value))
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 }
 
@@ -341,13 +341,13 @@ class DatabaseCommand {
   @Command(name = "backup", description = ["Backup the database to a file"])
   fun backup(@Parameters(paramLabel = "PATH") path: String): Int {
     val req = CliRequest(command = "db", action = "backup", targets = listOf(path))
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 
   @Command(name = "restore", description = ["Restore the database from a file"])
   fun restore(@Parameters(paramLabel = "PATH") path: String): Int {
     val req = CliRequest(command = "db", action = "restore", targets = listOf(path))
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 
   @Command(name = "reset", description = ["Wipe all data and recreate the database schema"])
@@ -365,7 +365,7 @@ class DatabaseCommand {
     }
 
     val req = CliRequest(command = "db", action = "reset")
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 }
 
@@ -383,7 +383,7 @@ class LogCommand {
             command = "log",
             action = "stream",
             options = mapOf("verbose" to verbose, "follow" to false))
-    VectorIPC.transmit(req)
+    JessicaLSIPC.transmit(req)
     return 0
   }
 
@@ -397,13 +397,13 @@ class LogCommand {
             command = "log",
             action = "stream",
             options = mapOf("verbose" to verbose, "follow" to true))
-    VectorIPC.transmit(req)
+    JessicaLSIPC.transmit(req)
     return 0
   }
 
   @Command(name = "clear", description = ["Clear log buffers"])
   fun clear(@Option(names = ["-v", "--verbose"]) verbose: Boolean): Int {
     val req = CliRequest(command = "log", action = "clear", options = mapOf("verbose" to verbose))
-    return OutputFormatter.print(VectorIPC.transmit(req), parent.json)
+    return OutputFormatter.print(JessicaLSIPC.transmit(req), parent.json)
   }
 }

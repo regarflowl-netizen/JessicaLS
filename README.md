@@ -46,7 +46,7 @@
 2. Pasang melalui root manager yang mendukung Zygisk (Magisk / KernelSU / APatch).
 3. Installer (`customize.sh`) akan memverifikasi SHA-256 setiap berkas, mendeteksi modul konflik (`zygisk_lsposed`, `zygisk_vector`) dan menonaktifkannya secara aman tanpa menghapus data di `/data/adb/lspd`.
 4. Reboot perangkat, lalu buka **JessicaLS Manager** melalui notifikasi sistem atau shortcut launcher.
-5. Untuk uninstall, hapus modul `zygisk_jessicals` melalui root manager dan reboot.
+5. Untuk uninstall, hapus modul `zygisk_jessicals` melalui root manager dan reboot. Skrip `uninstall.sh` hanya membersihkan file runtime sementara (`.cli_sock`, `lock`) dan **mempertahankan** `/data/adb/lspd` agar konfigurasi modul, database, dan log pengguna tidak hilang.
 
 ## 5. Troubleshooting & Pengumpulan Log
 

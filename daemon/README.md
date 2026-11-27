@@ -11,15 +11,15 @@ The daemon is organized into discrete packages handling IPC, state management, O
 ```text
 src/main/
 ├── jni/                      # Native C++ implementations (dex2oat wrapper, logcat parser)
-└── kotlin/org/matrix/vector/daemon/
+└── kotlin/org/jessicals/daemon/
     ├── data/                 # SQLite schema, immutable state cache, and file operations
     ├── env/                  # UNIX domain socket servers and native process monitors
     ├── ipc/                  # AIDL endpoints (Framework, Manager, ModuleApp, InjectedModule, SystemServer)
     ├── system/               # System binder delegates and Notification UI
     ├── utils/                # Context forgery, signature verification, and JNI bridges
     ├── Cli.kt                # Command-line interface definitions
-    ├── VectorDaemon.kt       # Main entry point and looper initialization
-    └── VectorService.kt      # Primary IVectorDaemon implementation
+    ├── JessicaLSDaemon.kt       # Main entry point and looper initialization
+    └── JessicaLSService.kt      # Primary IJessicaLSDaemon implementation
 ```
 
 ## Concurrency and State Management
@@ -40,7 +40,7 @@ That separation is what gives a scope row its lifetime.
 * The package name is the whole identity. A different build that later claims the name inherits the scope, so a row is a statement about a name rather than about a signed application.
 * While its target is absent, a row is invisible in the manager, which lists installed applications only. It survives an apply regardless: the scope editor writes the difference the reader made rather than replacing the table, so a row it cannot draw is neither shown nor dropped.
 * Four paths delete a row, and nothing else does — a module's scope being replaced wholesale (a manager apply, the CLI, a restore), an explicit removal (`scope remove`, or a module withdrawing its own request), pruning a module to the scope its `module.prop` fixes, and the foreign key cascade when the module itself is uninstalled.
-* Package events decide by name. A package that has just been installed arrives under a uid the cache has never seen — a reinstalled target is not the uid it left as — so `VectorService` asks the scope table whether the package is a target before requesting a rebuild. Matching the arriving uid against the cache answers "no" for precisely the case that needs the rebuild.
+* Package events decide by name. A package that has just been installed arrives under a uid the cache has never seen — a reinstalled target is not the uid it left as — so `JessicaLSService` asks the scope table whether the package is a target before requesting a rebuild. Matching the arriving uid against the cache answers "no" for precisely the case that needs the rebuild.
 
 Module configuration follows the opposite rule: a module whose package no user holds any more is deleted from the database along with its scope and its preferences. A module that is not installed cannot be loaded into anything, while a target that is not installed is only a target that is not running.
 
@@ -53,13 +53,13 @@ During device boot, the daemon establishes a communication channel with the nati
 
 * The daemon registers an `IServiceCallback` to listen for the registration of a hardware proxy service (typically the `serial` service). Once intercepted, the daemon replaces the proxy service with its own binder.
 * The Zygisk module queries this proxy service to retrieve the framework loader DEX via `SharedMemory` and the class obfuscation map.
-* Concurrently, the daemon sends a raw `ACTION_SEND_BINDER` transaction to the `activity` service. The Zygisk module's JNI hook intercepts this transaction before it reaches the Activity Manager, extracting and storing the daemon's primary `VectorService` binder for future use.
+* Concurrently, the daemon sends a raw `ACTION_SEND_BINDER` transaction to the `activity` service. The Zygisk module's JNI hook intercepts this transaction before it reaches the Activity Manager, extracting and storing the daemon's primary `JessicaLSService` binder for future use.
 
 ### 2. Target Application Rendezvous
 When a standard user application spawns, it requests framework access from the daemon.
 
 * The target application queries the `activity` service. The Zygisk module inside `system_server` intercepts this query.
-* The `system_server` forwards the application's UID, PID, process name, and a newly created heartbeat `BBinder` to the daemon using the previously stored `VectorService` reference.
+* The `system_server` forwards the application's UID, PID, process name, and a newly created heartbeat `BBinder` to the daemon using the previously stored `JessicaLSService` reference.
 * The daemon verifies the request against its `ConfigCache` to determine if the application is within the scope of any enabled modules.
 * If approved, the daemon returns an `FrameworkService` binder, which the `system_server` passes back to the target application.
 * The daemon links a `DeathRecipient` to the heartbeat binder to automatically clean up internal tracking maps when the application process dies.

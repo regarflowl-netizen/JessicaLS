@@ -1,6 +1,6 @@
-# VectorDex2Oat
+# JessicaLSDex2Oat
 
-VectorDex2Oat is a specialized wrapper and instrumentation suite for the Android `dex2oat` (Ahead-of-Time compiler) binary. It is designed to intercept the compilation process, force specific compiler behaviors (specifically disabling method inlining), and transparently spoof the resulting OAT metadata to hide the presence of the wrapper.
+JessicaLSDex2Oat is a specialized wrapper and instrumentation suite for the Android `dex2oat` (Ahead-of-Time compiler) binary. It is designed to intercept the compilation process, force specific compiler behaviors (specifically disabling method inlining), and transparently spoof the resulting OAT metadata to hide the presence of the wrapper.
 
 ## Overview
 

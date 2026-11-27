@@ -301,7 +301,7 @@ fun ModulesScreen(
             ModulesHeader(
                 active = visible?.modules?.count { it.isEnabled } ?: counts.first,
                 total = visible?.modules?.size ?: counts.second,
-                onBackup = { backupLauncher.launch("vector-modules.bak") },
+                onBackup = { backupLauncher.launch("jessicals-modules.bak") },
                 onRestore = { restoreLauncher.launch(arrayOf("*/*")) },
                 titleOverlay =
                     if (selection.isEmpty()) null
@@ -334,7 +334,7 @@ fun ModulesScreen(
                                         )
                                     }
                                 },
-                                onBackup = { selectionBackupLauncher.launch("vector-modules.bak") },
+                                onBackup = { selectionBackupLauncher.launch("jessicals-modules.bak") },
                                 onUninstall = { confirmUninstall = true },
                             )
                         }

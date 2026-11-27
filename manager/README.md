@@ -41,7 +41,7 @@ with whatever they managed to fetch before there was a daemon.
 
 `ipc/DaemonClient` wraps every AIDL call in `runIpc`, which moves it to `Dispatchers.IO` and returns
 a `Result`. The interface is
-`services/manager-service/src/main/aidl/org/matrix/vector/ipc/IManagerService.aidl`, and it is the
+`services/manager-service/src/main/aidl/org/jessicals/ipc/IManagerService.aidl`, and it is the
 source of truth for what each call means: read the method's documentation there before calling it.
 
 Two properties of Binder shape most of the mistakes made here, and the AIDL spells out what each
@@ -98,7 +98,7 @@ Debug builds add a second launcher activity — a demo mode with scripted device
 framework. It does mean `monkey -c LAUNCHER` picks one of the two at random:
 
 ```sh
-adb shell am start -n org.matrix.vector.manager/.ui.MainActivity
+adb shell am start -n org.jessicals.manager/.ui.MainActivity
 ```
 
 There is no test source set anywhere in this repository, and CI runs `zipAll` and nothing else. A

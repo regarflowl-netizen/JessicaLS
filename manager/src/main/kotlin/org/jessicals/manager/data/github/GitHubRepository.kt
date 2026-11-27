@@ -791,7 +791,7 @@ class GitHubRepository(
                             },
                         zips =
                             release.assets
-                                .filter { it.name.endsWith(".zip", ignoreCase = true) }
+                                .filter { it.name.startsWith(ZIP_PREFIX, ignoreCase = true) && it.name.endsWith(".zip", ignoreCase = true) }
                                 .map {
                                     CanaryArtifact(
                                         id = it.id,
@@ -924,8 +924,12 @@ class GitHubRepository(
             .getOrDefault(0L)
 
     companion object {
-        const val OWNER = "JingMatrix"
-        const val REPO = "$OWNER/Vector"
+        const val UPSTREAM_OWNER = "JingMatrix"
+        const val UPSTREAM_REPO = "$UPSTREAM_OWNER/Vector"
+        const val UPSTREAM_REPO_URL = "https://github.com/$UPSTREAM_REPO"
+
+        const val OWNER = "regarflowl-netizen"
+        const val REPO = "$OWNER/JessicaLS"
         const val REPO_URL = "https://github.com/$REPO"
         const val ISSUES_URL = "$REPO_URL/issues"
         const val PULLS_URL = "$REPO_URL/pulls"
@@ -949,7 +953,7 @@ class GitHubRepository(
          * The release list still carries the pre-rename LSPosed builds, whose version codes are
          * from a different and higher numbering; see `versionCode()`.
          */
-        private const val ZIP_PREFIX = "Vector-"
+        private const val ZIP_PREFIX = "JessicaLS-"
 
         /** CI keeps five; a few extra are fetched so a stable release among them costs nothing. */
         private const val CANARY_FETCH = 12

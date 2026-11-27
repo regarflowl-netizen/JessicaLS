@@ -12,8 +12,8 @@ It defines a Dependency Injection (DI) contract (`LegacyFrameworkDelegate`) whic
 ### 1. The Hooking Engine
 
 *   **`VectorHookBuilder`**: Implements the `HookBuilder` API. It validates the target `Executable`, bundles the module's `Hooker`, `priority`, and `ExceptionMode` into a `VectorHookRecord`, and registers it natively via JNI.
-*   **`VectorNativeHooker`**: The JNI trampoline target. When a hooked method is executed, the C++ layer invokes `callback(Array<Any?>)` on this class. It fetches the active hooks (both modern and legacy) from the native registry as global `jobject` references, constructs the root `VectorChain`, and initiates execution.
-*   **`VectorChain`**: Implements the recursive `proceed()` state machine.
+*   **`JessicaLSNativeHooker`**: The JNI trampoline target. When a hooked method is executed, the C++ layer invokes `callback(Array<Any?>)` on this class. It fetches the active hooks (both modern and legacy) from the native registry as global `jobject` references, constructs the root `JessicaLSChain`, and initiates execution.
+*   **`JessicaLSChain`**: Implements the recursive `proceed()` state machine.
     *   **Exception Handling**: It implements the logic for `ExceptionMode`. In `PROTECTIVE` mode, if an interceptor throws an exception *before* calling `proceed()`, the chain skips the interceptor. If it throws *after* calling `proceed()`, the chain catches the exception and restores the cached downstream result/throwable to protect the host process.
 
 ### 2. The Invocation System
@@ -21,7 +21,7 @@ It defines a Dependency Injection (DI) contract (`LegacyFrameworkDelegate`) whic
 The `Invoker` system allows modules to execute methods while bypassing standard JVM access checks, with granular control over hook execution.
 
 *   **`Type.Origin`**: Dispatches directly to JNI (`HookBridge.invokeOriginalMethod`), bypassing all active hooks.
-*   **`Type.Chain`**: Constructs a localized `VectorChain` containing only hooks with a priority less than or equal to the requested `maxPriority`, allowing modules to execute partial hook chains.
+*   **`Type.Chain`**: Constructs a localized `JessicaLSChain` containing only hooks with a priority less than or equal to the requested `maxPriority`, allowing modules to execute partial hook chains.
 *   **`VectorCtorInvoker`**: Handles constructor invocation. It separates memory allocation (`HookBridge.allocateObject`) from initialization (`invokeOriginalMethod` / `invokeSpecialMethod`) to support safe `newInstanceSpecial` logic.
 
 ### 3. Dependency Injection Contract
@@ -34,5 +34,5 @@ When `xposed` intercepts an Android lifecycle event (e.g., `LoadedApk.createClas
 
 Modules are executed strictly from memory using an isolated ClassLoader, ensuring zero disk footprint and maximum stealth against anti-cheat mechanisms.
 * The module APK is loaded into `SharedMemory` (ashmem) to bypass Java heap limitations. Once the Android Runtime (ART) ingests the DEX buffers, the ashmem is instantly unmapped, preventing memory leaks and leaving no residual file descriptors.
-* The `VectorModuleClassLoader` is attached exclusively to the Xposed Framework's classloader branch, preventing the target app from discovering the module via reflection or `ClassLoader.getParent()` chain-walking.
+* The `JessicaLSModuleClassLoader` is attached exclusively to the Xposed Framework's classloader branch, preventing the target app from discovering the module via reflection or `ClassLoader.getParent()` chain-walking.
 * `VectorURLStreamHandler` intercepts standard `jar:` requests, reading assets and resources natively from the module path without triggering Android's global `JarFile` cache, preventing OS-level file locks.
